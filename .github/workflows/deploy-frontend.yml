@@ -17,11 +17,9 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        working-directory: employee-frontend
         run: npm ci
 
       - name: Build
-        working-directory: employee-frontend
         run: npm run build
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
@@ -34,5 +32,4 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Sync to S3
-        # working-directory: employee-frontend
         run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete
