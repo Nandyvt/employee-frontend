@@ -36,7 +36,7 @@ export default function App() {
     try {
       const created = await createEmployee(formValues);
       // Re-fetch the full list so the table reflects the real backend state
-      // (including the department name resolved via the JOIN on the server).
+      // (including the department name resolved via the JOIN on the server) .
       await loadEmployees();
       setModalOpen(false);
     } catch (err) {
