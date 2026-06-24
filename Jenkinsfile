@@ -10,6 +10,7 @@ pipeline {
         APP_SERVER_HOST         = '16.112.109.82'   // update after every app-instance restart
         APP_SERVER_USER         = 'ec2-user'
         APP_REPO_PATH           = '/home/ec2-user/employee-crud-api'
+        CLOUDFRONT_DISTRIBUTION_ID = 'E8H9BFDWXL8T1'
     }
 
     stages {
@@ -22,7 +23,9 @@ pipeline {
             when { expression { fileExists('server.js') } }
             steps {
                 sshagent(credentials: ['app-server-ssh']) {
+                    withCredentials([file(credentialsId: 'backend-env-file', variable: 'ENV_FILE')]) {
                     sh '''
+                        scp -o StrictHostKeyChecking=no $ENV_FILE ${APP_SERVER_USER}@${APP_SERVER_HOST}:${APP_REPO_PATH}/.env.production
                         ssh -o StrictHostKeyChecking=no ${APP_SERVER_USER}@${APP_SERVER_HOST} "
                             cd ${APP_REPO_PATH} &&
                             git pull origin develop &&
@@ -30,12 +33,13 @@ pipeline {
                             docker stop employee-crud-api || true &&
                             docker rm employee-crud-api || true &&
                             docker run -d --name employee-crud-api --restart unless-stopped \
-                              -p 3000:3000 --env-file ${APP_REPO_PATH}/.env.production \
-                              employee-crud-api:latest
+                            -p 3000:3000 --env-file ${APP_REPO_PATH}/.env.production \
+                            employee-crud-api:latest
                         "
                     '''
+                    }
                 }
-            }
+            }   
         }
 
         // ---------------- FRONTEND: built locally on the Jenkins instance ----------------
@@ -70,9 +74,11 @@ pipeline {
                     aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
                     aws configure set region "$AWS_REGION"
                     aws s3 sync dist_output/ s3://$S3_BUCKET --delete
+                    aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
                 '''
             }
         }
+
     }
 
     post {
