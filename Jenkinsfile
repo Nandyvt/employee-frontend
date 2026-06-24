@@ -6,8 +6,8 @@ pipeline {
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
         AWS_REGION             = 'ap-south-2'
         S3_BUCKET              = 'nandy-employee-frontend'
-        VITE_API_BASE_URL      = 'http://98.130.84.91/api'
-        APP_SERVER_HOST         = '98.130.84.91'   // update after every app-instance restart
+        VITE_API_BASE_URL      = 'http://16.112.109.82/api'
+        APP_SERVER_HOST         = '16.112.109.82'   // update after every app-instance restart
         APP_SERVER_USER         = 'ec2-user'
         APP_REPO_PATH           = '/home/ec2-user/employee-crud-api'
     }
