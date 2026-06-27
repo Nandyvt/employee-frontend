@@ -4,12 +4,9 @@ pipeline {
     environment {
         AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
-        AWS_REGION             = 'ap-south-2'
-        S3_BUCKET              = 'nandy-employee-frontend'
-        VITE_API_BASE_URL      = 'http://16.112.109.82/api'
-        APP_SERVER_HOST         = '16.112.109.82'   // update after every app-instance restart
-        APP_SERVER_USER         = 'ec2-user'
-        APP_REPO_PATH           = '/home/ec2-user/employee-crud-api'
+        AWS_REGION                 = 'ap-south-2'
+        S3_BUCKET                  = 'nandy-employee-frontend'
+        VITE_API_BASE_URL          = 'http://16.112.109.82/api'
         CLOUDFRONT_DISTRIBUTION_ID = 'E8H9BFDWXL8T1'
     }
 
@@ -18,33 +15,7 @@ pipeline {
             steps { checkout scm }
         }
 
-        // ---------------- BACKEND: triggered remotely on Instance A ----------------
-        stage('Backend: Remote rebuild + restart') {
-            when { expression { fileExists('server.js') } }
-            steps {
-                sshagent(credentials: ['app-server-ssh']) {
-                    withCredentials([file(credentialsId: 'backend-env-file', variable: 'ENV_FILE')]) {
-                    sh '''
-                        scp -o StrictHostKeyChecking=no $ENV_FILE ${APP_SERVER_USER}@${APP_SERVER_HOST}:${APP_REPO_PATH}/.env.production
-                        ssh -o StrictHostKeyChecking=no ${APP_SERVER_USER}@${APP_SERVER_HOST} "
-                            cd ${APP_REPO_PATH} &&
-                            git pull origin develop &&
-                            docker build -t employee-crud-api:latest . &&
-                            docker stop employee-crud-api || true &&
-                            docker rm employee-crud-api || true &&
-                            docker run -d --name employee-crud-api --restart unless-stopped \
-                            -p 3000:3000 --env-file ${APP_REPO_PATH}/.env.production \
-                            employee-crud-api:latest
-                        "
-                    '''
-                    }
-                }
-            }   
-        }
-
-        // ---------------- FRONTEND: built locally on the Jenkins instance ----------------
-        stage('Frontend: Build') {
-            when { expression { fileExists('vite.config.js') } }
+        stage('Build') {
             steps {
                 sh '''
                     docker build \
@@ -54,8 +25,7 @@ pipeline {
             }
         }
 
-        stage('Frontend: Extract dist/') {
-            when { expression { fileExists('vite.config.js') } }
+        stage('Extract dist/') {
             steps {
                 sh '''
                     docker create --name extract-frontend employee-frontend-build:latest
@@ -66,8 +36,7 @@ pipeline {
             }
         }
 
-        stage('Frontend: Sync to S3') {
-            when { expression { fileExists('vite.config.js') } }
+        stage('Sync to S3 + invalidate CloudFront') {
             steps {
                 sh '''
                     aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
@@ -78,11 +47,10 @@ pipeline {
                 '''
             }
         }
-
     }
 
     post {
-        success { echo 'Pipeline finished successfully.' }
+        success { echo 'Frontend deployed to S3/CloudFront successfully.' }
         failure { echo 'Pipeline failed — check the stage logs above.' }
     }
 }
