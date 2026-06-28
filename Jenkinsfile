@@ -6,7 +6,7 @@ pipeline {
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
         AWS_REGION                 = 'ap-south-2'
         S3_BUCKET                  = 'nandy-employee-frontend'
-        VITE_API_BASE_URL          = 'http://a4aebf8441c10474cbc19fc208d56cc8-1396253925.ap-south-2.elb.amazonaws.com/api'
+        VITE_API_BASE_URL          = 'http://ab4db11d7958b40fa93b9a49e59ad553-877950153.ap-south-2.elb.amazonaws.com/api'
         CLOUDFRONT_DISTRIBUTION_ID = 'E8H9BFDWXL8T1'
     }
 
